@@ -29,7 +29,7 @@ var TimerMixin = require('react-timer-mixin');
 var invariant = require('fbjs/lib/invariant');
 var dismissKeyboard = require('dismissKeyboard');
 
-// var MovieScreen = require('./MovieScreen');
+var RecipeScreen = require('./RecipeScreen');
 var SearchBar = require('./SearchBar');
 var ApiKeys = require('./ApiKeys')
 var RecipeCell = require('./RecipeCell');
@@ -72,13 +72,49 @@ var SearchRecipes = React.createClass({
   },
 
   componentDidMount: function() {
-    this.searchRecipes('chicken');
+    this.getFeaturedRecipes();
   },
 
   _urlForQueryAndPage: function(): string {
     return (
       API_URL + 'v5/search/recipes_by_keywords'
     );
+  },
+  
+  getFeaturedRecipes: function() {
+    var cachedResultsForQuery = resultsCache.dataForFeaturedRecipes;
+    
+    this.setState({
+      isLoading: true,
+      isLoadingTail: false,
+    });
+    var authEncoded = "Basic "+ btoa('cobrand_api_key_ignored:' + ApiKeys.user);
+    var obj = {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'Authorization': authEncoded
+      }
+    }
+    
+    fetch(FEATURED_RECIPES_URL, obj)
+      .then((response) => response.json())
+      .catch((error) => {
+        resultsCache.dataForFeaturedRecipes = undefined;
+
+        this.setState({
+          dataSource: this.getDataSource([]),
+          isLoading: false,
+        });
+      })
+      .then((responseData) => {
+        this.setState({
+          isLoading: false,
+          dataSource: this.getDataSource(responseData.hits),
+        });
+      })
+      .done();
   },
 
   searchRecipes: function(query: string) {
@@ -132,8 +168,8 @@ var SearchRecipes = React.createClass({
       })
       .then((responseData) => {
         LOADING[query] = false;
-        resultsCache.totalForQuery[query] = responseData.total;
-        resultsCache.dataForQuery[query] = responseData.movies;
+        resultsCache.totalForQuery[query] = responseData.total_records;
+        resultsCache.dataForQuery[query] = responseData.meals;
         resultsCache.nextPageNumberForQuery[query] = 2;
 
         if (this.state.filter !== query) {
@@ -172,6 +208,7 @@ var SearchRecipes = React.createClass({
     return (
       <RecipeCell 
         key={recipe.id}
+        onSelect={() => this.selectRecipe(recipe)}
         recipe={recipe}
       />
     );
@@ -248,19 +285,19 @@ var SearchRecipes = React.createClass({
     return this.state.dataSource.cloneWithRows(meals);
   },
 
-  selectMovie: function(movie: Object) {
+  selectRecipe: function(recipe: Object) {
     if (Platform.OS === 'ios') {
       this.props.navigator.push({
-        title: movie.title,
-        component: MovieScreen,
-        passProps: {movie},
+        name: recipe.name,
+        component: RecipeScreen,
+        passProps: {recipe},
       });
     } else {
       dismissKeyboard();
       this.props.navigator.push({
-        title: movie.title,
-        name: 'movie',
-        movie: movie,
+        title: recipe.name,
+        name: 'recipe',
+        movie: recipe,
       });
     }
   },
@@ -280,7 +317,7 @@ var SearchRecipes = React.createClass({
       return <ActivityIndicatorIOS style={styles.scrollSpinner} />;
     } else {
       return (
-        <View  style={{alignItems: 'center'}}>
+        <View style={{alignItems: 'center'}}>
           <ProgressBarAndroid styleAttr="Large"/>
         </View>
       );
@@ -298,6 +335,7 @@ var SearchRecipes = React.createClass({
         renderRow={this.renderRow}
         renderSeparator={this.renderSeparator}
         dataSource={this.state.dataSource}
+        renderFooter={this.renderFooter}
         automaticallyAdjustContentInsets={false}
         keyboardDismissMode="on-drag"
         keyboardShouldPersistTaps={true}
