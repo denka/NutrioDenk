@@ -69,8 +69,7 @@ var RecipeScreen = React.createClass({
   },
   
   getImageUrl: function(images: Array<any>) {
-    if(images){
-      console.log("https://demo.nutrio.com/"+images.slice(-1)[0].url);
+    if(images && images.length > 0){
       return("https://demo.nutrio.com/"+images.slice(-1)[0].url);
     }
     return('');
