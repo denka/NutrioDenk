@@ -47,16 +47,19 @@ var RecipeScreen = React.createClass({
   },
   render: function() {
     var meal = this.state.meal
+    var recipeImage = meal.images && meal.images.length > 0 ?
+      <Image
+        source={{uri: this.getImageUrl(meal.images)}}
+        style={styles.detailsImage}
+      /> :
+      <Text/>;
     return (
       <ScrollView
         isLoading={this.state.isLoading}>
         <View>
-          <Image
-            source={{uri: this.getImageUrl(meal.images)}}
-            style={styles.detailsImage}
-          />
+          {recipeImage}
           <Text style={styles.mealName}>{meal.name}</Text>
-          <Text style={styles.mealDetail}>Serves: {meal.number_of_servings} * Prep Time: {meal.prep_time_in_minutes} * Total Time: {meal.total_time_in_minutes}</Text>
+          <Text style={styles.mealDetail}>Serves: {meal.number_of_servings} • Prep Time: {meal.prep_time_in_minutes} • Total Time: {meal.total_time_in_minutes}</Text>
         </View>
         <View style={styles.contentContainer}>
           <Text style={styles.sectionTitle}>Ingredients:</Text>
@@ -75,10 +78,7 @@ var RecipeScreen = React.createClass({
   },
   
   getImageUrl: function(images: Array<any>) {
-    if(images && images.length > 0){
-      return("https://demo.nutrio.com/"+images.slice(-1)[0].url);
-    }
-    return('');
+    return("https://demo.nutrio.com/"+images.slice(-1)[0].url);
   },
   
   getDataSource: function(field: string, arry: Array<any>): ListView.DataSource {
