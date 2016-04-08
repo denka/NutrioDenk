@@ -42,10 +42,19 @@ var RecipeScreen = React.createClass({
     };
   },
   render: function() {
+    var meal = this.state.meal
+    console.log(meal.images);
     return (
       <ScrollView
         contentContainerStyle={styles.contentContainer}
         isLoading={this.state.isLoading}>
+        <View>
+          <Image
+            source={{uri: this.getImageUrl(meal.images)}}
+            style={styles.detailsImage}
+          />
+        </View>
+        <Text style={styles.mealName}>{meal.name}</Text>
         <Text>Serves: {meal.number_of_servings}</Text>
         <Text>Prep Time: {meal.prep_time_in_minutes}</Text>
         <Text>Total Time: {meal.total_time_in_minutes}</Text>
@@ -57,6 +66,14 @@ var RecipeScreen = React.createClass({
         />
       </ScrollView>
     );
+  },
+  
+  getImageUrl: function(images: Array<any>) {
+    if(images){
+      console.log("https://demo.nutrio.com/"+images.slice(-1)[0].url);
+      return("https://demo.nutrio.com/"+images.slice(-1)[0].url);
+    }
+    return('');
   },
   
   getDataSource: function(recipes: Array<any>): ListView.DataSource {
@@ -103,7 +120,7 @@ var styles = StyleSheet.create({
     justifyContent: 'space-between',
     flex: 1,
   },
-  movieTitle: {
+  mealName: {
     flex: 1,
     fontSize: 16,
     fontWeight: '500',
