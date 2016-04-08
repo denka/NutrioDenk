@@ -43,7 +43,6 @@ var RecipeScreen = React.createClass({
   },
   render: function() {
     var meal = this.state.meal
-    console.log(meal.images);
     return (
       <ScrollView
         contentContainerStyle={styles.contentContainer}
@@ -59,10 +58,10 @@ var RecipeScreen = React.createClass({
         <Text>Prep Time: {meal.prep_time_in_minutes}</Text>
         <Text>Total Time: {meal.total_time_in_minutes}</Text>
         <Text>needs attention: {meal.needs_attention}</Text>
-        <Text>Recipes:</Text>
+        <Text>Ingredients:</Text>
         <ListView
           dataSource={this.state.dataSource}
-          renderRow={(recipe) => <Text>{recipe.name}</Text>}
+          renderRow={(recipeFood) => <Text>{recipeFood.amount_for_display} {recipeFood.food.name}</Text>}
         />
       </ScrollView>
     );
@@ -104,7 +103,7 @@ var RecipeScreen = React.createClass({
         this.setState({
           isLoading: false,
           meal: responseData[0].meal,
-          dataSource: this.getDataSource(responseData[0].recipes),
+          dataSource: this.getDataSource(responseData[0].recipes[0].recipe_foods),
         });
       })
       .done();
