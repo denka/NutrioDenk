@@ -25,7 +25,8 @@ var {
   ListView,
 } = React;
 
-var ApiKeys = require('./ApiKeys')
+var ApiKeys = require('./ApiKeys');
+var entities = require('entities');
 
 var API_URL = 'https://api.nutrio.com/api/';
 var MEAL_URL = API_URL + 'v3/meals';
@@ -36,7 +37,10 @@ var RecipeScreen = React.createClass({
       isLoading: true,
       meal: {},
       recipes: [],
-      dataSource: new ListView.DataSource({
+      ingredientsDataSource: new ListView.DataSource({
+        rowHasChanged: (row1, row2) => row1 !== row2,
+      }),
+      prepNotesDataSource: new ListView.DataSource({
         rowHasChanged: (row1, row2) => row1 !== row2,
       }),
     };
@@ -45,24 +49,27 @@ var RecipeScreen = React.createClass({
     var meal = this.state.meal
     return (
       <ScrollView
-        contentContainerStyle={styles.contentContainer}
         isLoading={this.state.isLoading}>
         <View>
           <Image
             source={{uri: this.getImageUrl(meal.images)}}
             style={styles.detailsImage}
           />
+          <Text style={styles.mealName}>{meal.name}</Text>
+          <Text style={styles.mealDetail}>Serves: {meal.number_of_servings} * Prep Time: {meal.prep_time_in_minutes} * Total Time: {meal.total_time_in_minutes}</Text>
         </View>
-        <Text style={styles.mealName}>{meal.name}</Text>
-        <Text>Serves: {meal.number_of_servings}</Text>
-        <Text>Prep Time: {meal.prep_time_in_minutes}</Text>
-        <Text>Total Time: {meal.total_time_in_minutes}</Text>
-        <Text>needs attention: {meal.needs_attention}</Text>
-        <Text>Ingredients:</Text>
-        <ListView
-          dataSource={this.state.dataSource}
-          renderRow={(recipeFood) => <Text>{recipeFood.amount_for_display} {recipeFood.food.name}</Text>}
-        />
+        <View style={styles.contentContainer}>
+          <Text style={styles.sectionTitle}>Ingredients:</Text>
+          <ListView
+            dataSource={this.state.ingredientsDataSource}
+            renderRow={(recipeFood) => <Text>{recipeFood.amount_for_display} {entities.decodeHTML(recipeFood.food.name)}</Text>}
+          />
+          <Text style={styles.sectionTitle}>Prep Notes:</Text>
+          <ListView
+            dataSource={this.state.prepNotesDataSource}
+            renderRow={(prepNote) => <Text>{entities.decodeHTML(prepNote.action)}</Text>}
+          />
+        </View>
       </ScrollView>
     );
   },
@@ -74,8 +81,8 @@ var RecipeScreen = React.createClass({
     return('');
   },
   
-  getDataSource: function(recipes: Array<any>): ListView.DataSource {
-    return this.state.dataSource.cloneWithRows(recipes);
+  getDataSource: function(field: string, arry: Array<any>): ListView.DataSource {
+    return this.state[field].cloneWithRows(arry);
   },
   
   componentDidMount: function() {
@@ -103,7 +110,8 @@ var RecipeScreen = React.createClass({
         this.setState({
           isLoading: false,
           meal: responseData[0].meal,
-          dataSource: this.getDataSource(responseData[0].recipes[0].recipe_foods),
+          ingredientsDataSource: this.getDataSource('ingredientsDataSource', responseData[0].recipes[0].recipe_foods),
+          prepNotesDataSource: this.getDataSource('prepNotesDataSource', responseData[0].recipes[0].prep_notes),
         });
       })
       .done();
@@ -119,6 +127,27 @@ var styles = StyleSheet.create({
     flex: 1,
   },
   mealName: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    backgroundColor: '#327fc1',
+    color: 'rgba(255,255,255,0.95)',
+    fontSize: 16,
+    padding: 10,
+    marginTop: -20,
+    marginBottom: 10,    
+  },
+  mealDetail: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    backgroundColor: '#327fc1',
+    color: 'rgba(255,255,255,0.95)',
+    fontSize: 14,
+    padding: 10,
+    marginTop: -20,
+    marginBottom: 10,    
+  },
+  sectionTitle: {
+    marginTop: 5,
     flex: 1,
     fontSize: 16,
     fontWeight: '500',
@@ -149,8 +178,8 @@ var styles = StyleSheet.create({
     flexDirection: 'row',
   },
   detailsImage: {
-    width: 134,
-    height: 200,
+    flexDirection: 'row',
+    height: 250,
     backgroundColor: '#eaeaea',
     marginRight: 10,
   },
