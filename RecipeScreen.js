@@ -24,15 +24,60 @@ var {
   View,
 } = React;
 
+var ApiKeys = require('./ApiKeys')
+
+var API_URL = 'https://api.nutrio.com/api/';
+var MEAL_URL = API_URL + 'v3/meals';
+
 var RecipeScreen = React.createClass({
+  getInitialState: function() {
+    return {
+      isLoading: true,
+      meal: {},
+      recipes: [],
+    };
+  },
   render: function() {
     return (
-      <ScrollView contentContainerStyle={styles.contentContainer}>
+      <ScrollView
+        contentContainerStyle={styles.contentContainer}
+        isLoading={this.state.isLoading}>
         <Text>
-          {this.props.meal.name}
+          {this.state.meal.name}
         </Text>
       </ScrollView>
     );
+  },
+  
+  componentDidMount: function() {
+    this.getMeal(this.props.recipe.guid);
+  },
+  
+  getMeal: function(mealGuid: string) {
+    var obj = {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'Authorization': "Basic "+ btoa('api_key_ignored:' + ApiKeys.user)
+      }
+    }
+    fetch(MEAL_URL + "?guid=" + mealGuid, obj)
+      .then((response) => response.json())
+      .catch((error) => {
+        this.setState({
+          meal: {},
+          isLoading: false,
+        });
+      })
+      .then((responseData) => {
+        this.setState({
+          isLoading: false,
+          meal: responseData[0].meal,
+          recipes: responseData[0].recipes,
+        });
+      })
+      .done();
   },
 });
 

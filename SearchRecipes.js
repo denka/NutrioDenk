@@ -119,33 +119,6 @@ var SearchRecipes = React.createClass({
       })
       .done();
   },
-  
-  getMeal: function(mealGuid: string) {
-    var obj = {
-      method: 'GET',
-      headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-        'Authorization': "Basic "+ btoa('api_key_ignored:' + ApiKeys.user)
-      }
-    }
-    fetch(MEAL_URL + "?guid=" + mealGuid, obj)
-      .then((response) => response.json())
-      .catch((error) => {
-        this.setState({
-          meal: this.getDataSource([]),
-          isLoading: false,
-        });
-      })
-      .then((responseData) => {
-        this.setState({
-          isLoading: false,
-          meal: responseData.meal,
-          recipes: responseData.recipes,
-        });
-      })
-      .done();
-  },
 
   searchRecipes: function(query: string) {
     this.setState({filter: query});
@@ -316,11 +289,10 @@ var SearchRecipes = React.createClass({
   },
 
   selectRecipe: function(recipe: Object) {
-    this.getMeal(recipe.guid)
     this.props.navigator.push({
       title: recipe.name,
       component: RecipeScreen,
-      passProps: {meal: this.state.meal, recipes: this.state.recipes},
+      passProps: {recipe},
     });
   },
 
