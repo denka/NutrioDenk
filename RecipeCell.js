@@ -18,7 +18,6 @@ var {
 var RecipeCell = React.createClass({
   render: function() {
     var TouchableElement = TouchableHighlight;
-    console.log(this.props.recipe);
     return (
       <View>
         <TouchableElement
@@ -28,7 +27,6 @@ var RecipeCell = React.createClass({
           <View style={styles.row}>
             <Text style={styles.movieTitle} numberOfLines={2}>
               {this.props.recipe.name}
-              Denk
             </Text>
           </View>
         </TouchableElement>

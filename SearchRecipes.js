@@ -25,16 +25,14 @@ var {
   Text,
   View,
 } = React;
-// var TimerMixin = require('react-timer-mixin');
-// 
-// var invariant = require('fbjs/lib/invariant');
-// var dismissKeyboard = require('dismissKeyboard');
-// 
-var ApiKeys = require('./ApiKeys')
+var TimerMixin = require('react-timer-mixin');
+var invariant = require('fbjs/lib/invariant');
+var dismissKeyboard = require('dismissKeyboard');
 
-var RecipeCell = require('./RecipeCell');
 // var MovieScreen = require('./MovieScreen');
 var SearchBar = require('./SearchBar');
+var ApiKeys = require('./ApiKeys')
+var RecipeCell = require('./RecipeCell');
 
 /**
  * This is for demo purposes only, and rate limited.
@@ -57,7 +55,7 @@ var resultsCache = {
 var LOADING = {};
 
 var SearchRecipes = React.createClass({
-  // mixins: [TimerMixin],
+  mixins: [TimerMixin],
 
   timeoutID: (null: any),
 
@@ -74,7 +72,7 @@ var SearchRecipes = React.createClass({
   },
 
   componentDidMount: function() {
-    this.searchRecipes('');
+    this.searchRecipes('chicken');
   },
 
   _urlForQueryAndPage: function(): string {
@@ -83,7 +81,22 @@ var SearchRecipes = React.createClass({
     );
   },
 
-  searchRecipes: function() {
+  searchRecipes: function(query: string) {
+    this.setState({filter: query});
+
+    var cachedResultsForQuery = resultsCache.dataForQuery[query];
+    if (cachedResultsForQuery) {
+      if (!LOADING[query]) {
+        this.setState({
+          dataSource: this.getDataSource(cachedResultsForQuery),
+          isLoading: false
+        });
+      } else {
+        this.setState({isLoading: true});
+      }
+      return;
+    }
+    
     this.setState({
       isLoading: true,
       queryNumber: this.state.queryNumber + 1,
@@ -102,22 +115,52 @@ var SearchRecipes = React.createClass({
         page_number: 1,
         order_by: 'name',
         order_direction: 'asc',
-        term: 'chicken'
+        term: query
       })
     }
 
     fetch(this._urlForQueryAndPage(), obj)
       .then((response) => response.json())
       .catch((error) => {
-        console.log(error);
+        LOADING[query] = false;
+        resultsCache.dataForQuery[query] = undefined;
+
+        this.setState({
+          dataSource: this.getDataSource([]),
+          isLoading: false,
+        });
       })
       .then((responseData) => {
+        LOADING[query] = false;
+        resultsCache.totalForQuery[query] = responseData.total;
+        resultsCache.dataForQuery[query] = responseData.movies;
+        resultsCache.nextPageNumberForQuery[query] = 2;
+
+        if (this.state.filter !== query) {
+          // do not update state if the query is stale
+          return;
+        }
+
         this.setState({
           isLoading: false,
           dataSource: this.getDataSource(responseData.meals),
         });
       })
       .done();
+  },
+  
+  renderSeparator: function(
+    sectionID: number | string,
+    rowID: number | string,
+    adjacentRowHighlighted: boolean
+  ) {
+    var style = styles.rowSeparator;
+    if (adjacentRowHighlighted) {
+      style = [style, styles.rowSeparatorHide];
+    }
+    return (
+      <View key={'SEP_' + sectionID + '_' + rowID}  style={style}/>
+    );
   },
   
   renderRow: function(
@@ -174,17 +217,17 @@ var SearchRecipes = React.createClass({
         });
       })
       .then((responseData) => {
-        var moviesForQuery = resultsCache.dataForQuery[query].slice();
+        var recipesForQuery = resultsCache.dataForQuery[query].slice();
 
         LOADING[query] = false;
         // We reached the end of the list before the expected number of results
         if (!responseData.movies) {
           resultsCache.totalForQuery[query] = moviesForQuery.length;
         } else {
-          for (var i in responseData.movies) {
-            moviesForQuery.push(responseData.movies[i]);
+          for (var i in responseData.meals) {
+            recipesForQuery.push(responseData.meals[i]);
           }
-          resultsCache.dataForQuery[query] = moviesForQuery;
+          resultsCache.dataForQuery[query] = recipesForQuery;
           resultsCache.nextPageNumberForQuery[query] += 1;
         }
 
@@ -226,7 +269,7 @@ var SearchRecipes = React.createClass({
     var filter = event.nativeEvent.text.toLowerCase();
 
     this.clearTimeout(this.timeoutID);
-    this.timeoutID = this.setTimeout(() => this.searchMovies(filter), 100);
+    this.timeoutID = this.setTimeout(() => this.searchRecipes(filter));
   },
 
   renderFooter: function() {
@@ -246,17 +289,21 @@ var SearchRecipes = React.createClass({
 
   render: function() {
     var content = this.state.dataSource.getRowCount() === 0 ?
-      <Text>No Meals</Text> :
+      <NoRecipes
+        filter={this.state.filter}
+        isLoading={this.state.isLoading}
+      /> :
       <ListView
         ref="listview"
         renderRow={this.renderRow}
+        renderSeparator={this.renderSeparator}
         dataSource={this.state.dataSource}
         automaticallyAdjustContentInsets={false}
         keyboardDismissMode="on-drag"
         keyboardShouldPersistTaps={true}
         showsVerticalScrollIndicator={false}
       />;
-
+      
     return (
       <View style={styles.container}>
         <SearchBar
@@ -272,7 +319,7 @@ var SearchRecipes = React.createClass({
   },
 });
 
-var NoMovies = React.createClass({
+var NoRecipes = React.createClass({
   render: function() {
     var text = '';
     if (this.props.filter) {
@@ -280,7 +327,7 @@ var NoMovies = React.createClass({
     } else if (!this.props.isLoading) {
       // If we're looking at the latest movies, aren't currently loading, and
       // still have no results, show a message
-      text = 'No movies found';
+      text = 'No Recipes found';
     }
 
     return (
