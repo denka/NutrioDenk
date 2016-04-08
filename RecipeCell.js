@@ -25,7 +25,7 @@ var RecipeCell = React.createClass({
           onShowUnderlay={this.props.onHighlight}
           onHideUnderlay={this.props.onUnhighlight}>
           <View style={styles.row}>
-            <Text style={styles.movieTitle} numberOfLines={2}>
+            <Text style={styles.recipeName} numberOfLines={2}>
               {this.props.recipe.name}
             </Text>
           </View>
@@ -39,7 +39,7 @@ var styles = StyleSheet.create({
   textContainer: {
     flex: 1,
   },
-  movieTitle: {
+  recipeName: {
     flex: 1,
     fontSize: 16,
     fontWeight: '500',

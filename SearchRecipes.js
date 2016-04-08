@@ -41,6 +41,7 @@ var RecipeCell = require('./RecipeCell');
  */
 var API_URL = 'https://api.nutrio.com/api/';
 var FEATURED_RECIPES_URL = API_URL + 'v2/search/featured_recipes';
+var MEAL_URL = API_URL + 'v3/meals';
 
 // Results should be cached keyed by the query
 // with values of null meaning "being fetched"
@@ -68,6 +69,8 @@ var SearchRecipes = React.createClass({
       }),
       filter: '',
       queryNumber: 0,
+      meal: {},
+      recipes: [],
     };
   },
 
@@ -112,6 +115,33 @@ var SearchRecipes = React.createClass({
         this.setState({
           isLoading: false,
           dataSource: this.getDataSource(responseData.hits),
+        });
+      })
+      .done();
+  },
+  
+  getMeal: function(mealGuid: string) {
+    var obj = {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'Authorization': "Basic "+ btoa('api_key_ignored:' + ApiKeys.user)
+      }
+    }
+    fetch(MEAL_URL + "?guid=" + mealGuid, obj)
+      .then((response) => response.json())
+      .catch((error) => {
+        this.setState({
+          meal: this.getDataSource([]),
+          isLoading: false,
+        });
+      })
+      .then((responseData) => {
+        this.setState({
+          isLoading: false,
+          meal: responseData.meal,
+          recipes: responseData.recipes,
         });
       })
       .done();
@@ -286,20 +316,12 @@ var SearchRecipes = React.createClass({
   },
 
   selectRecipe: function(recipe: Object) {
-    if (Platform.OS === 'ios') {
-      this.props.navigator.push({
-        name: recipe.name,
-        component: RecipeScreen,
-        passProps: {recipe},
-      });
-    } else {
-      dismissKeyboard();
-      this.props.navigator.push({
-        title: recipe.name,
-        name: 'recipe',
-        movie: recipe,
-      });
-    }
+    this.getMeal(recipe.guid)
+    this.props.navigator.push({
+      title: recipe.name,
+      component: RecipeScreen,
+      passProps: {meal: this.state.meal, recipes: this.state.recipes},
+    });
   },
 
   onSearchChange: function(event: Object) {

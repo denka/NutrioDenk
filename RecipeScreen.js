@@ -24,16 +24,12 @@ var {
   View,
 } = React;
 
-// var getImageSource = require('./getImageSource');
-// var getStyleFromScore = require('./getStyleFromScore');
-// var getTextFromScore = require('./getTextFromScore');
-
 var RecipeScreen = React.createClass({
   render: function() {
     return (
       <ScrollView contentContainerStyle={styles.contentContainer}>
         <Text>
-          {this.props.recipe.name}
+          {this.props.meal.name}
         </Text>
       </ScrollView>
     );
