@@ -22,6 +22,7 @@ var {
   StyleSheet,
   Text,
   View,
+  ListView,
 } = React;
 
 var ApiKeys = require('./ApiKeys')
@@ -35,6 +36,9 @@ var RecipeScreen = React.createClass({
       isLoading: true,
       meal: {},
       recipes: [],
+      dataSource: new ListView.DataSource({
+        rowHasChanged: (row1, row2) => row1 !== row2,
+      }),
     };
   },
   render: function() {
@@ -42,11 +46,21 @@ var RecipeScreen = React.createClass({
       <ScrollView
         contentContainerStyle={styles.contentContainer}
         isLoading={this.state.isLoading}>
-        <Text>
-          {this.state.meal.name}
-        </Text>
+        <Text>Serves: {meal.number_of_servings}</Text>
+        <Text>Prep Time: {meal.prep_time_in_minutes}</Text>
+        <Text>Total Time: {meal.total_time_in_minutes}</Text>
+        <Text>needs attention: {meal.needs_attention}</Text>
+        <Text>Recipes:</Text>
+        <ListView
+          dataSource={this.state.dataSource}
+          renderRow={(recipe) => <Text>{recipe.name}</Text>}
+        />
       </ScrollView>
     );
+  },
+  
+  getDataSource: function(recipes: Array<any>): ListView.DataSource {
+    return this.state.dataSource.cloneWithRows(recipes);
   },
   
   componentDidMount: function() {
@@ -74,7 +88,7 @@ var RecipeScreen = React.createClass({
         this.setState({
           isLoading: false,
           meal: responseData[0].meal,
-          recipes: responseData[0].recipes,
+          dataSource: this.getDataSource(responseData[0].recipes),
         });
       })
       .done();
